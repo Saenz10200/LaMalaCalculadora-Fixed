@@ -3,33 +3,38 @@ name: SonarQube
 on:
   push:
     branches:
-      - principal
+      - principal        # nombre de tu rama (en tu repo se llama "principal")
   pull_request:
     types: [opened, synchronize, reopened]
+  workflow_dispatch:     # para poder lanzarlo manualmente
 
 jobs:
   build:
+    name: Build and analyze
     runs-on: windows-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # necesario para SonarCloud
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '7.0.x'
+          dotnet-version: 7.0.x
 
-      - name: Install SonarScanner
+      - name: Install SonarScanner for .NET
         run: dotnet tool install --global dotnet-sonarscanner
 
-      - name: SonarScanner Begin
-        run: dotnet-sonarscanner begin /k:"Saenz10200_LaMalaCalculadora-Fixed" /o:"saenz10200" /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
-
-      - name: Build
-        run: dotnet build
-
-      - name: SonarScanner End
-        run: dotnet-sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
+      - name: Build and analyze with SonarCloud
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          dotnet-sonarscanner begin `
+            /k:"Saenz10200_LaMalaCalculadora-Fixed" `
+            /o:"saenz10200" `
+            /d:sonar.host.url="https://sonarcloud.io" `
+            /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+          dotnet build
+          dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
